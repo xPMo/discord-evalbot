@@ -11,7 +11,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(mes
 
 INLINE_PAT = re.compile(r'([^`\\]|\\.)*`([^`]*)`', re.S)
 
-token = os.environ.get('DISCORD_BOT_TOKEN')
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except:
+    logging.WARNING('Could not load dotenv')
+token = os.environ.get('BOT_TOKEN')
 intents = discord.Intents.default()
 bot = discord.Bot()
 
@@ -30,6 +35,10 @@ for shell in ['bash', 'sh', 'dash', 'ksh']:
 
 
 LANGMAP = {
+    'sh': {
+        'command': ['sh'],
+        'container': 'eval-shell:alpine',
+    },
     'bash': {
         'command': ['bash', '-O', 'extglob', '-O', 'globstar'],
         'container': 'eval-shell:alpine',
@@ -44,7 +53,7 @@ LANGMAP = {
 def parseblock(s: str):
     lines = s.split('\n')
     lang = 'bash'
-    while line := lines.pop():
+    while line := lines.pop(0):
         if line.startswith('```'):
             lang = line.removeprefix('```').strip() or lang
             break
@@ -56,13 +65,13 @@ def parseblock(s: str):
             return s, lang
     code = []
     # assume if loop finishes that the fence was just missing from the end
-    while line := lines.pop():
+    while line := lines.pop(0):
         if line.startswith('```'):
             break
         code.append(line)
-    return code.join('\n'), lang
+    return '\n'.join(code), lang
 
-def run_code(self, lang, code, label):
+def run_code(lang, code, label):
     container = lang['container']
     podman_cmd = lang['command']
     logging.info(f"Running in podman {container} with {podman_cmd}")
@@ -85,48 +94,53 @@ def run_code(self, lang, code, label):
         stdout = proc.stdout
         stderr = proc.stderr
         if proc.returncode != 0:
-            parts.append(f'**Process exited non-zero: `{proc.returncode}`**')
+            parts.append(f'**Process exited non-zero: `{proc.returncode}`**\n')
     except TimeoutExpired as e:
         stdout = e.stdout
         stderr = e.stderr
-        parts.append((
-            f'**Process timed out in {timeout}**',
-            f'Process timed out in {timeout}s'
-        ))
+        parts.append(
+            f'**Process timed out in {timeout}**\n'
+        )
 
-    stdout = stdout and self.code_block(lang.get('stdout-class'), stdout.decode().strip('\n'))
-    stderr = stderr and self.code_block(lang.get('stderr-class'), stderr.decode().strip('\n'))
     if not stdout and not stderr:
         parts.append('*no stdout or stderr*')
     else:
-        parts += [stdout or '*no stdout*', stderr or '*no stderr*']
+        if stdout:
+            parts += [f'```{lang.get("stdout-class")}\n', stdout.decode().strip('\n'), '\n```']
+        else:
+            parts.append('*no stdout*')
+        if stderr:
+            parts += [f'```{lang.get("stderr-class")}\n', stderr.decode().strip('\n'), '\n```']
+        else:
+            parts.append('*no stderr*')
 
-    return '\n'.join(parts)
+    return ''.join(parts)
 
 @bot.event
 async def on_ready():
     logging.info(f'We have logged in as {bot.user}')
 
 @bot.message_command(name='Shellcheck')
-async def eval_entry(ctx, message):
+async def check_command(ctx, message):
     try:
         code, lang = parseblock(message.content)
         langmap = CHECKMAP.get(lang)
         if not langmap:
-            return ctx.send(f'No matching language for {lang}~')
-        ctx.send(f'Code:\n```\n{code}\n```Lang: {lang}')
-    except Exception(e):
-        return await ctx.respond('Failed:\n```\n{e}\n```')
+            return await ctx.respond(f'No matching language for {lang}~')
+        return await ctx.respond(run_code(langmap, code, message.author))
+    except Exception as e:
+        return await ctx.respond('Failed:\n```\n{e.message}\n```')
 
 @bot.message_command(name='Evaluate Code')
-async def eval_entry(ctx, message):
+async def eval_command(ctx, message):
     try:
         code, lang = parseblock(message.content)
         langmap = LANGMAP.get(lang)
         if not langmap:
-            return ctx.send(f'No matching language for {lang}~')
-        ctx.send(f'Code:\n```\n{code}\n```Lang: {lang}')
-    except Exception(e):
-        return await ctx.respond('Failed:\n```\n{e}\n```')
+            return await ctx.respond(f'No matching language for {lang}~')
+        return await ctx.respond(run_code(langmap, code, message.author))
+    except Exception as e:
+        await ctx.respond(f'Failed:\n```\n{e}\n```')
+        raise e
 
 bot.run(token)

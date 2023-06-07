@@ -99,7 +99,7 @@ def run_code(lang, code, label):
         stdout = e.stdout
         stderr = e.stderr
         parts.append(
-            f'**Process timed out in {timeout}**\n'
+            f'**Process timed out in {timeout}s**\n'
         )
 
     if not stdout and not stderr:
@@ -126,8 +126,9 @@ async def check_command(ctx, message):
         code, lang = parseblock(message.content)
         langmap = CHECKMAP.get(lang)
         if not langmap:
-            return await ctx.respond(f'No matching language for {lang}~')
-        return await ctx.respond(run_code(langmap, code, message.author))
+            return await ctx.respond(f'No matching language for {lang}!')
+        interaction = await ctx.respond('Checking...')
+        return await interaction.edit_original_response(content=run_code(langmap, code, message.author))
     except Exception as e:
         return await ctx.respond('Failed:\n```\n{e.message}\n```')
 
@@ -137,8 +138,9 @@ async def eval_command(ctx, message):
         code, lang = parseblock(message.content)
         langmap = LANGMAP.get(lang)
         if not langmap:
-            return await ctx.respond(f'No matching language for {lang}~')
-        return await ctx.respond(run_code(langmap, code, message.author))
+            return await ctx.respond(f'No matching language for {lang}!')
+        interaction = await ctx.respond('Running...')
+        return await interaction.edit_original_response(content=run_code(langmap, code, message.author))
     except Exception as e:
         await ctx.respond(f'Failed:\n```\n{e}\n```')
         raise e

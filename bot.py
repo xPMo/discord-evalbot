@@ -18,7 +18,7 @@ bot = discord.Bot()
 CHECKMAP = {
     'zsh': {
         'command': ['zsh', '-f'],
-        'container': 'alpine-eval-shell'
+        'container': 'eval-shell:alpine'
     }
 }
 for shell in ['bash', 'sh', 'dash', 'ksh']:
@@ -32,12 +32,12 @@ for shell in ['bash', 'sh', 'dash', 'ksh']:
 LANGMAP = {
     'bash': {
         'command': ['bash', '-O', 'extglob', '-O', 'globstar'],
-        'container': 'alpine-eval-shell',
+        'container': 'eval-shell:alpine',
     },
     'zsh': {
         'command':  ['zsh', '-l', '--extendedglob', '--multibyte'],
         'podman_opts': ['--env', 'LANG=C.UTF-8'],
-        'container': 'alpine-eval-shell',
+        'container': 'eval-shell:alpine',
     }
 }
 

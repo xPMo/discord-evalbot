@@ -3,8 +3,7 @@ import discord
 import logging
 import os
 import re
-import requests
-from html2text import html2text
+from subprocess import run, PIPE, TimeoutExpired
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 

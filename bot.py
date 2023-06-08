@@ -75,7 +75,7 @@ LANG_PAT   = re.compile(r'^([a-zA-Z]*)\n', re.S)
 
 def parseblock(s: str):
     lang = 'bash'
-    try: 
+    try:
         before, code, after = s.split('```', maxsplit=2)
         print(code)
         if match := LANG_PAT.match(code):
@@ -114,7 +114,7 @@ def run_code(lang, code, label):
         if proc.returncode != 0:
             try:
                 parts.append(f'**Process exited non-zero: `{proc.returncode}` `{RETCODEMAP[proc.returncode]}`**\n')
-            except ValueError:
+            except KeyError:
                 parts.append(f'**Process exited non-zero: `{proc.returncode}`**\n')
     except TimeoutExpired as e:
         stdout = e.stdout

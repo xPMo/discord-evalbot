@@ -120,8 +120,6 @@ def run_code(lang, code, label):
             parts.append('*no stdout*')
         if stderr:
             parts += [f'```{lang.get("stderr-class")}\n', stderr.decode().strip('\n'), '\n```']
-        else:
-            parts.append('*no stderr*')
 
     return ''.join(parts)
 

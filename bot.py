@@ -57,27 +57,28 @@ LANGMAP = {
         'container': 'eval-shell:alpine',
     }
 }
+for m in [LANGMAP, CHECKMAP, FMTMAP]:
+    m['shell'] = m.get('bash')
+    m['mksh']  = m.get('ksh')
+
+INLINE_PAT = re.compile(r'([^`\\]|\\.)*`([^`]*)`', re.S)
+LANG_PAT   = re.compile(r'^([a-zA-Z]*)\n', re.S)
 
 def parseblock(s: str):
-    lines = s.split('\n')
     lang = 'bash'
-    while line := lines.pop(0):
-        if line.startswith('```'):
-            lang = line.removeprefix('```').strip() or lang
-            break
-    else:
+    try: 
+        before, code, after = s.split('```', maxsplit=2)
+        print(code)
+        if match := LANG_PAT.match(code):
+            lang = match.groups()[0].lower() or lang
+            code = code[slice(1 + len(match.groups()[0]), -1)]
+        logging.info(f'Code block: {lang}: {code}')
+        return code, lang
+    except ValueError:
         # No line began with code fence, try single-backtick block
         if match := INLINE_PAT.match(s):
             return match.groups()[1], lang
-        else:
-            return s, lang
-    code = []
-    # assume if loop finishes that the fence was just missing from the end
-    while line := lines.pop(0):
-        if line.startswith('```'):
-            break
-        code.append(line)
-    return '\n'.join(code), lang
+        return s, lang
 
 def run_code(lang, code, label):
     container = lang['container']
@@ -138,7 +139,7 @@ async def check_command(ctx, message):
         interaction = await ctx.respond('Checking...')
         return await interaction.edit_original_response(content=run_code(langmap, code, message.author))
     except Exception as e:
-        return await ctx.respond('Failed:\n```\n{e.message}\n```')
+        return await ctx.respond(f'Failed:\n```\n{e.message}\n```')
 
 @bot.message_command(name='Evaluate Code')
 async def eval_command(ctx, message):

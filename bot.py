@@ -77,7 +77,6 @@ def parseblock(s: str):
     lang = 'bash'
     try:
         before, code, after = s.split('```', maxsplit=2)
-        print(code)
         if match := LANG_PAT.match(code):
             lang = match.groups()[0].lower() or lang
             code = code[slice(1 + len(match.groups()[0]), -1)]

@@ -3,6 +3,7 @@ import discord
 import logging
 import os
 import re
+import signal
 from subprocess import run, PIPE, TimeoutExpired
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -19,6 +20,13 @@ except:
 token = os.environ.get('BOT_TOKEN')
 intents = discord.Intents.default()
 bot = discord.Bot()
+
+RETCODEMAP = dict()
+for sig in signal.valid_signals():
+    try:
+        RETCODEMAP[sig.value + 128] = sig.name
+    except:
+        pass
 
 FMTMAP = dict()
 # shfmt language dialect translation
@@ -104,7 +112,10 @@ def run_code(lang, code, label):
         stdout = proc.stdout
         stderr = proc.stderr
         if proc.returncode != 0:
-            parts.append(f'**Process exited non-zero: `{proc.returncode}`**\n')
+            try:
+                parts.append(f'**Process exited non-zero: `{proc.returncode}` `{RETCODEMAP[proc.returncode]}`**\n')
+            except ValueError:
+                parts.append(f'**Process exited non-zero: `{proc.returncode}`**\n')
     except TimeoutExpired as e:
         stdout = e.stdout
         stderr = e.stderr

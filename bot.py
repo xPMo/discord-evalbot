@@ -39,7 +39,8 @@ for shell in ['bash', 'sh', 'dash', 'ksh']:
     }
     FMTMAP[shell] = {
         'command': [f'-ln={fmtmap.get(shell) or shell}', '-bn', '-s'],
-        'container': 'mvdan/shfmt:latest-alpine'
+        'container': 'mvdan/shfmt:latest-alpine',
+        'stdout-class': shell
     }
 
 LANGMAP = {

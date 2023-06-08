@@ -9,16 +9,20 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(mes
 
 ## Bot
 
-INLINE_PAT = re.compile(r'([^`\\]|\\.)*`([^`]*)`', re.S)
+
 
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except:
-    logging.WARNING('Could not load dotenv')
+    logging.warning('Could not load dotenv')
 token = os.environ.get('BOT_TOKEN')
 intents = discord.Intents.default()
 bot = discord.Bot()
+
+FMTMAP = dict()
+# shfmt language dialect translation
+fmtmap = {'ksh': 'mksh', 'sh': 'posix'}
 
 CHECKMAP = {
     'zsh': {
@@ -26,13 +30,17 @@ CHECKMAP = {
         'container': 'eval-shell:alpine'
     }
 }
+
 for shell in ['bash', 'sh', 'dash', 'ksh']:
     CHECKMAP[shell] = {
         'command': [f'--shell={shell}', '/dev/stdin'],
         'container': 'koalaman/shellcheck',
         'workdir': '/',
     }
-
+    FMTMAP[shell] = {
+        'command': [f'-ln={fmtmap.get(shell) or shell}', '-bn'],
+        'container': 'mvdan/shfmt:latest-alpine'
+    }
 
 LANGMAP = {
     'sh': {
@@ -140,6 +148,19 @@ async def eval_command(ctx, message):
         if not langmap:
             return await ctx.respond(f'No matching language for {lang}!')
         interaction = await ctx.respond('Running...')
+        return await interaction.edit_original_response(content=run_code(langmap, code, message.author))
+    except Exception as e:
+        await ctx.respond(f'Failed:\n```\n{e}\n```')
+        raise e
+
+@bot.message_command(name='Format Code')
+async def fmt_command(ctx, message):
+    try:
+        code, lang = parseblock(message.content)
+        langmap = FMTMAP.get(lang)
+        if not langmap:
+            return await ctx.respond(f'No matching language for {lang}!')
+        interaction = await ctx.respond('Formatting...')
         return await interaction.edit_original_response(content=run_code(langmap, code, message.author))
     except Exception as e:
         await ctx.respond(f'Failed:\n```\n{e}\n```')

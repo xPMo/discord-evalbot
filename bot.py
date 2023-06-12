@@ -41,7 +41,7 @@ CHECKMAP = {
 
 for shell in ['bash', 'sh', 'dash', 'ksh']:
     CHECKMAP[shell] = {
-        'command': [f'--shell={shell}', '/dev/stdin'],
+        'command': [f'--shell={shell}', '--color=always', '/dev/stdin'],
         'container': 'koalaman/shellcheck',
         'workdir': '/',
     }
@@ -126,11 +126,11 @@ def run_code(lang, code, label):
         parts.append('*no stdout or stderr*')
     else:
         if stdout:
-            parts += [f'```{lang.get("stdout-class")}\n', stdout.decode().strip('\n'), '\n```']
+            parts += [f'```{lang.get("stdout-class") or "ansi"}\n', stdout.decode().strip('\n'), '\n```']
         else:
             parts.append('*no stdout*')
         if stderr:
-            parts += [f'```{lang.get("stderr-class")}\n', stderr.decode().strip('\n'), '\n```']
+            parts += [f'```{lang.get("stderr-class") or "ansi"}\n', stderr.decode().strip('\n'), '\n```']
 
     return ''.join(parts)
 

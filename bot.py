@@ -32,12 +32,7 @@ FMTMAP = dict()
 # shfmt language dialect translation
 fmtmap = {'ksh': 'mksh', 'sh': 'posix'}
 
-CHECKMAP = {
-    'zsh': {
-        'command': ['zsh', '-f'],
-        'container': 'eval-shell:alpine'
-    }
-}
+CHECKMAP = dict()
 
 for shell in ['bash', 'sh', 'dash', 'ksh']:
     CHECKMAP[shell] = {
@@ -80,7 +75,7 @@ def parseblock(s: str):
         if match := LANG_PAT.match(code):
             lang = match.groups()[0].lower() or lang
             code = code[slice(1 + len(match.groups()[0]), -1)]
-        logging.info(f'Code block: {lang}: {code}')
+        logging.info(f'Code block: {lang}: {repr(code)}')
         return code, lang
     except ValueError:
         # No line began with code fence, try single-backtick block
@@ -146,7 +141,11 @@ async def check_command(ctx, message):
         if not langmap:
             return await ctx.respond(f'No matching language for {lang}!')
         interaction = await ctx.respond('Checking...')
-        return await interaction.edit_original_response(content=run_code(langmap, code, message.author))
+        content = run_code(langmap, code, message.author)
+        splits = content.rsplit('\n\n', 1)
+        if len(splits) == 2:
+            content = splits[0] + '```' + splits[1].removesuffix('```')
+        return await interaction.edit_original_response(content=content)
     except Exception as e:
         return await ctx.respond(f'Failed:\n```\n{e.message}\n```')
 

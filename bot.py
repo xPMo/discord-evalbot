@@ -162,6 +162,24 @@ async def eval_command(ctx, message):
         await ctx.respond(f'Failed:\n```\n{e}\n```')
         raise e
 
+@bot.slash_command(name='eval', description='Evaluate Code')
+async def eval_slash(
+    ctx: discord.ApplicationContext,
+    code: discord.Option(str, 'snippet to run', name='snippet'),
+    lang: discord.Option(str, 'language choice', name='language', choices=list(LANGMAP.keys()), default='bash'),
+):
+    try:
+        langmap = LANGMAP.get(lang)
+        if not langmap:
+            return await ctx.respond(f'No matching language for {lang}!')
+        interaction = await ctx.respond('Running...')
+        return await interaction.edit_original_response(content=run_code(langmap, code, ctx.author))
+    except Exception as e:
+        await ctx.respond(f'Failed:\n```\n{e}\n```')
+        raise e
+    
+    
+
 @bot.message_command(name='Format Code')
 async def fmt_command(ctx, message):
     try:

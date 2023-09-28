@@ -101,7 +101,7 @@ def run_code(lang, code, label):
 
     parts = []
     try:
-        proc = run(['podman', 'run', '--rm', '-i'] + podman_opts + [container] + podman_cmd,
+        proc = run(['podman', 'run', '--no-hosts', '--rm', '-i'] + podman_opts + [container] + podman_cmd,
             input=code.encode('utf-8'), capture_output=True, timeout=timeout)
         stdout = proc.stdout
         stderr = proc.stderr
